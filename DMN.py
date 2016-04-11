@@ -27,14 +27,15 @@ class SemMemModule(MergeLayer):
         return (None, None, self.hid_state_size)
 
     def get_output_for(self, inputs, **kwargs):
-        # Core part that actually describes how the theano variables works to produce output
+        # Core part that actually describes how the theano variables work to produce output
         # input is in shape of (batch, sentence, word)
         # word_dropout is the varible determines the proportion of words to be masked to 0-vectors
         input         = inputs[0]
         word_dropout  = inputs[1]
 
         # Apply an input tensor to word embedding matrix and word_dropout.
-        # And then, flatten it to shape of (batch*sentence, word, hid_state) to be fit into GRU library  
+        # And then, flatten it to shape of (batch*sentence, word, hid_state) to be fit into GRU library
+        # Used Numpy style indexing instead of masking
         return T.reshape(self.W[input], (-1, input.shape[2], self.hid_state_size)) * self.rand_stream.binomial((input.shape[0]*input.shape[1], input.shape[2]), p=1-word_dropout, dtype=theano.config.floatX).dimshuffle((0,1,'x'))
 
 
@@ -57,7 +58,7 @@ class InputModule(MergeLayer):
 
     def get_params(self, **tags):
         # Because InputModules uses external GRULayer's parameters,
-        # We have to inform this information to train them. 
+        # We have to notify this information to train the GRU's parameters. 
         return self.GRU.get_params(**tags)
     def get_output_shape_for(self, input_shape):
         return (None, None, self.hid_state_size)
@@ -81,7 +82,7 @@ class InputModule(MergeLayer):
         return candidate_facts
            
 class QuestionModule(MergeLayer):
-    # Almost same as Input Module, where its sentense size is one.
+    # Almost same as Input Module, where its sentense's size is one.
     def __init__(self, incomings, voc_size, hid_state_size,
                  SemMem, GRU, **kwargs):
         super(QuestionModule, self).__init__(incomings, **kwargs)
@@ -120,7 +121,8 @@ class GRU_Gate(object):
 
 class EpMemModule(MergeLayer):
     # Episodic Memory Module.
-    # This has many varibles and complex operations, so it would be hard to understand(and debug) this impelememntation. 
+    # This has many varibles and complex operations, 
+    # so it would be very hard to understand(and debug) this implememntation. 
     def __init__(self, incomings, hid_state_size, max_sentence,
                  Wb=GlorotUniform(), W1=GlorotUniform(), W2=GlorotUniform(),
                  b1=Constant(0.), b2=Constant(0,),
